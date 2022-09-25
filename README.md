@@ -82,7 +82,7 @@ npm run test:unit
       - Authorization -> Bearer Token
       - Parameter in URL :size (number)
     - **RESPONSE**
-    - Body -> [{"word": ..., "guesses":...}, ...size (max)] | {"error": ...}
+      - Body -> [{"word": ..., "guesses":...}, ...size (max)] | {"error": ...}
 
 ### Users
 
