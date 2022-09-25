@@ -31,3 +31,5 @@ app.listen(port, () => {
       throw error;
     });
 });
+
+export default app;

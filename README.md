@@ -26,8 +26,22 @@ npm run build
 
 After the build was completed, you can start the server with:
 
-```bach
+```bash
 npm run start
+```
+
+If you want to run the server in development mode, watching changes and building for Typescript automatically you can use:
+
+```bash
+npm run dev
+```
+
+# Unit tests
+
+Some unit tests were created for the main services. If you want to run the unit test you can use:
+
+```bash
+npm run test:unit
 ```
 
 ## Notes

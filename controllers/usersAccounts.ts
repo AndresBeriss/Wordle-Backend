@@ -31,7 +31,7 @@ const logInUser = async (userAccount: UserAccount): Promise<string> => {
 
   try {
     const logIn = await dbPool.query(
-      "SELECT user_id as userId, name FROM users WHERE name = $1 AND password IS NOT NULL AND password = crypt($2, password)",
+      "SELECT user_id, name FROM users WHERE name = $1 AND password IS NOT NULL AND password = crypt($2, password)",
       [userAccount.name, userAccount.password]
     );
 
@@ -59,7 +59,7 @@ router.post("/signUp", async (req: Request, res: Response) => {
         const signedUpSuccesfully: boolean = await signUpUser(newUser);
 
         if (signedUpSuccesfully) {
-          res.status(100).json({ message: "Usuario creado exitosamente" });
+          res.status(201).json({ message: "Usuario creado exitosamente" });
         } else {
           res
             .status(500)
