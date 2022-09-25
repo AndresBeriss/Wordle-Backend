@@ -45,11 +45,11 @@ const logInUser = async (userAccount: UserAccount): Promise<User> => {
   return userLoggedIn;
 };
 
-const getUserData = async (userId: number): Promise<User> => {
+const getUserData = async (userName: string): Promise<User> => {
   return (
     await dbPool.query(
-      "SELECT user_id, name, played, wins FROM users WHERE user_id = $1",
-      [userId]
+      "SELECT user_id, name, played, wins FROM users WHERE name = $1",
+      [userName]
     )
   ).rows[0] as User;
 };
@@ -75,7 +75,7 @@ router.post("/signUp", async (req: Request, res: Response) => {
         const signedUpSuccesfully: boolean = await signUpUser(newUser);
 
         if (signedUpSuccesfully) {
-          res.status(200).json({ message: "Usuario creado exitosamente" });
+          res.status(100).json({ message: "Usuario creado exitosamente" });
         } else {
           res
             .status(500)
@@ -126,15 +126,15 @@ router.post("/logIn", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/getUserData/:userId", async (req: Request, res: Response) => {
-  const userId: number = Number(req.params.userId);
+router.get("/getUserData/:userName", async (req: Request, res: Response) => {
+  const userName: string = req.params.userName;
 
   try {
-    if (!Number.isNaN(userId)) {
-      const userData: User = await getUserData(userId);
+    if (userName && userName !== null && userName !== "") {
+      const userData: User = await getUserData(userName);
       res.status(200).json(userData);
     } else {
-      res.status(400).json({ error: "El ID del usuario debe ser un número" });
+      res.status(400).json({ error: "El nombre del usuario es inválido" });
     }
   } catch (error) {
     res.status(500).json({ error: "SERVER INTERNAL ERROR" });
