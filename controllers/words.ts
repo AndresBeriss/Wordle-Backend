@@ -5,6 +5,7 @@ import dbPool from "../database";
 
 import Letter from "../models/Letter";
 import Word from "../models/Word";
+import { authorize } from "./auth";
 
 const router = Router();
 const cache = new NodeCache({ stdTTL: 5 * 60, deleteOnExpire: true });
@@ -34,6 +35,7 @@ const createRandomWord = () => {
         console.log("Random word -> ", cache.get("currentWord"));
       } else {
         console.error("There are no word available");
+        setTimeout(createRandomWord, 5000);
       }
     }
   );
@@ -181,80 +183,92 @@ const getTopWords = async (size: number): Promise<Word[]> => {
   ).rows as Word[];
 };
 
-router.get("/currentWord", async (req: Request, res: Response) => {
-  try {
-    const currentWord: string | undefined = cache.get("currentWord");
-    res.status(200).json({ word: currentWord });
-  } catch (error) {
-    res.status(500).json({ error: "SERVER INTERNAL ERROR" });
-    throw error;
-  }
-});
+router
+  .route("/currentWord")
+  .get(authorize(["currentWord"]), async (req: Request, res: Response) => {
+    try {
+      const currentWord: string | undefined = cache.get("currentWord");
 
-router.post("/checkWord", async (req: Request, res: Response) => {
-  try {
-    const userWord: string = req.body.userWord;
-    const currentWord: string = cache.get("currentWord") as string;
-    console.log("User input word -> ", userWord);
+      res.status(200).json({
+        word:
+          currentWord && currentWord !== ""
+            ? currentWord
+            : "No hay palabra disponible",
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Server internal error" });
+      throw error;
+    }
+  });
 
-    const userAttemps = await checkUserAttemps(currentWord, 0);
+router
+  .route("/checkWord")
+  .post(authorize(["checkWord"]), async (req: Request, res: Response) => {
+    try {
+      const userWord: string = req.body.userWord;
+      const currentWord: string = cache.get("currentWord") as string;
+      console.log("User input word -> ", userWord);
 
-    if (userAttemps < 5) {
-      if (/^[a-zA-ZÁÉÍÓÚÑáéíóúñ]{5}$/.test(userWord)) {
-        const wordChecked: Letter[] = await checkWord(
-          userWord.toUpperCase(),
-          currentWord,
-          0
-        );
+      const userAttemps = await checkUserAttemps(currentWord, 0);
 
-        if (wordChecked.length === 5) {
-          res.status(200).json(wordChecked);
+      if (userAttemps < 5) {
+        if (/^[a-zA-ZÁÉÍÓÚÑáéíóúñ]{5}$/.test(userWord)) {
+          const wordChecked: Letter[] = await checkWord(
+            userWord.toUpperCase(),
+            currentWord,
+            0
+          );
+
+          if (wordChecked.length === 5) {
+            res.status(200).json(wordChecked);
+          } else {
+            res
+              .status(400)
+              .json({ error: "La palabra no existe en el diccionario" });
+          }
         } else {
-          res
-            .status(400)
-            .json({ error: "La palabra no existe en el diccionario" });
+          res.status(400).json({
+            error:
+              "Bad request: La palabra debe ser de 5 caracteres y no debe contener caracteres especiales ni números.",
+          });
         }
       } else {
-        res.status(400).json({
-          error:
-            "Bad request: La palabra debe ser de 5 caracteres y no debe contener caracteres especiales ni números.",
-        });
+        let message = "";
+
+        if (userAttemps === 5) {
+          insertUserPlayed(0);
+          message = "Se han agotado los 5 intentos disponibles";
+        } else if (userAttemps === 10) {
+          message = "Ya has acertado la palabra actual";
+        }
+
+        res.status(200).json({ message: message });
       }
-    } else {
-      let message = "";
+    } catch (error) {
+      res.status(500).json({ error: "Server internal error" });
+      throw error;
+    }
+  });
 
-      if (userAttemps === 5) {
-        insertUserPlayed(0);
-        message = "Se han agotado los 5 intentos disponibles";
-      } else if (userAttemps === 10) {
-        message = "Ya has acertado la palabra actual";
+router
+  .route("/getTopWords/:size")
+  .get(authorize(["getTopWords"]), async (req: Request, res: Response) => {
+    const size: number = Number(req.params.size);
+
+    try {
+      if (!Number.isNaN(size)) {
+        const topWords: Word[] = await getTopWords(size);
+        res.status(200).json(topWords);
+      } else {
+        res
+          .status(400)
+          .json({ error: "El parámetro de búsqueda debe ser un número" });
       }
-
-      res.status(200).json({ message: message });
+    } catch (error) {
+      res.status(500).json({ error: "Server internal error" });
+      throw error;
     }
-  } catch (error) {
-    res.status(500).json({ error: "SERVER INTERNAL ERROR" });
-    throw error;
-  }
-});
-
-router.get("/getTopWords/:size", async (req: Request, res: Response) => {
-  const size: number = Number(req.params.size);
-
-  try {
-    if (!Number.isNaN(size)) {
-      const topWords: Word[] = await getTopWords(size);
-      res.status(200).json(topWords);
-    } else {
-      res
-        .status(400)
-        .json({ error: "El parámetro de búsqueda debe ser un número" });
-    }
-  } catch (error) {
-    res.status(500).json({ error: "SERVER INTERNAL ERROR" });
-    throw error;
-  }
-});
+  });
 
 export default router;
 export { createRandomWord };

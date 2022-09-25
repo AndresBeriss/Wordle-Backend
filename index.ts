@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import helmet from "helmet";
 
 import createDictionary from "./controllers/dictionary";
+import UsersAccountsRouter from "./controllers/usersAccounts";
 import WordsRouter, { createRandomWord } from "./controllers/words";
 import UsersRouter from "./controllers/users";
 
@@ -14,6 +15,7 @@ const port = process.env.PORT || 8080;
 app.use(express.json());
 app.use(helmet());
 
+app.use("/userAccount", UsersAccountsRouter);
 app.use("/words", WordsRouter);
 app.use("/users", UsersRouter);
 
