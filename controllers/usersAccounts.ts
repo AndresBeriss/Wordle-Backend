@@ -4,7 +4,6 @@ import dbPool from "../database";
 import { generateToken } from "../utils/jwt";
 
 import UserAccount from "../models/UserAccount";
-import User from "../models/User";
 
 const router = Router();
 
@@ -32,12 +31,13 @@ const logInUser = async (userAccount: UserAccount): Promise<string> => {
 
   try {
     const logIn = await dbPool.query(
-      "SELECT user_id, name FROM users WHERE name = $1 AND password IS NOT NULL AND password = crypt($2, password)",
+      "SELECT user_id as userId, name FROM users WHERE name = $1 AND password IS NOT NULL AND password = crypt($2, password)",
       [userAccount.name, userAccount.password]
     );
 
     if (logIn.rowCount === 1) {
-      token = generateToken(logIn.rows[0] as User);
+      const user = logIn.rows[0];
+      token = generateToken({ userId: user.user_id, name: user.name });
     }
   } catch (error) {
     console.error(error);

@@ -206,17 +206,18 @@ router
   .post(authorize(["checkWord"]), async (req: Request, res: Response) => {
     try {
       const userWord: string = req.body.userWord;
+      const userId: number = req.body.userId;
       const currentWord: string = cache.get("currentWord") as string;
       console.log("User input word -> ", userWord);
 
-      const userAttemps = await checkUserAttemps(currentWord, 0);
+      const userAttemps = await checkUserAttemps(currentWord, userId);
 
       if (userAttemps < 5) {
         if (/^[a-zA-ZÁÉÍÓÚÑáéíóúñ]{5}$/.test(userWord)) {
           const wordChecked: Letter[] = await checkWord(
             userWord.toUpperCase(),
             currentWord,
-            0
+            userId
           );
 
           if (wordChecked.length === 5) {
@@ -236,7 +237,7 @@ router
         let message = "";
 
         if (userAttemps === 5) {
-          insertUserPlayed(0);
+          insertUserPlayed(userId);
           message = "Se han agotado los 5 intentos disponibles";
         } else if (userAttemps === 10) {
           message = "Ya has acertado la palabra actual";

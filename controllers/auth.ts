@@ -26,6 +26,8 @@ const authorize =
           .json({ message: "No tienes acceso a esta endpoint" });
       }
 
+      req.body.userId = decodedToken.userId;
+
       next();
     } catch (error: any) {
       if (error.name === "TokenExpiredError") {
